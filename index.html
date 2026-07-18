@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paediatric Mental Health Assessment Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+
+        .nav-link {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            transition: all .15s;
+            color: #334155;
+        }
+        .nav-link:hover { background:#e2e8f0; }
+
+        .std-btn, .ph-btn, .drug-btn, .disp-btn, .access-btn {
+            background:#fff; border-color:#cbd5e1; color:#334155;
+            transition: all .12s;
+        }
+        .std-btn.active, .ph-btn.active, .drug-btn.active, .disp-btn.active, .access-btn.active {
+            background:#01696F; border-color:#01696F; color:#fff;
+        }
+
+        .time-btn {
+            font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 6px;
+            border: 1px solid #cbd5e1; background: #f1f5f9; color: #334155; margin-left: 4px;
+        }
+        .time-btn.recorded { background:#01696F; color:#fff; border-color:#01696F; }
+
+        .rich-output {
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 12rem;
+            max-height: 68vh;
+            overflow-y: auto;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .rich-output:focus { outline: none; }
+
+        .toggle-radio { position:absolute; opacity:0; pointer-events:none; }
+
+        .risk-radio-card { transition: all .15s; }
+        .risk-radio-card input:checked + div { box-shadow: 0 0 0 3px rgba(0,0,0,0.08) inset; transform: scale(1.02); }
+
+        input[type="range"].mood-slider { -webkit-appearance:none; height:8px; border-radius:5px; background:#cbd5e1; }
+        input[type="range"].mood-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#01696F; cursor:pointer; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.4); }
+
+        @media print {
+            nav, header .flex.gap-2, #rightPanel, .no-print { display: none !important; }
+            body { background: #fff !important; }
+            .print-note { display: block !important; }
+        }
+        .print-note { display: none; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 antialiased pb-10">
+
+    <header class="shadow-sm sticky top-0 z-50 border-b border-slate-300" style="background:#1B3A5C;">
+        <div class="container mx-auto px-4 py-2">
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-lg flex items-center justify-center font-black text-lg" style="background:#01696F; color:#fff;">MH</div>
+                    <div>
+                        <h1 class="text-lg md:text-xl font-black text-white leading-tight">
+                            Paediatric Mental Health Assessment
+                            <span class="text-[10px] font-medium text-slate-100 bg-white/10 px-1.5 py-0.5 rounded border border-white/20 align-middle ml-1">v1.0</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-300 font-semibold">RCPCH / NICE Guidance</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="text-[10px] text-green-300 font-bold flex items-center gap-1" id="saveStatus">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Auto-save
+                    </p>
+                </div>
+            </div>
+
+            <nav class="flex flex-wrap items-center gap-1.5 md:gap-2 pb-1">
+                <a href="#sec-patient" class="nav-link bg-white/90">Patient</a>
+                <a href="#sec-safeguarding" class="nav-link bg-red-100 text-red-800">Safeguarding</a>
+                <a href="#sec-headsss" class="nav-link bg-white/90">HEADSSS</a>
+                <a href="#sec-mse" class="nav-link bg-white/90">MSE</a>
+                <a href="#sec-risk" class="nav-link bg-amber-100 text-amber-800">Risk</a>
+                <a href="#sec-plan" class="nav-link bg-white/90">Plan</a>
+                <a href="#sec-outcome" class="nav-link bg-white/90">Outcome</a>
+                <div class="flex-1"></div>
+                <button id="copyRichTextTop" onclick="copyRichText()" class="px-3 py-1.5 text-[11px] font-bold text-white rounded transition bg-blue-600">Copy Rich Text</button>
+                <button id="printBtn" class="px-3 py-1.5 text-[11px] font-bold text-white bg-slate-600 hover:bg-slate-700 rounded transition">🖨️ Print</button>
+                <button id="resetData" class="px-3 py-1.5 text-[11px] font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition">RESET</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <div class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-6">
+
+                <!-- SECTION 1: PATIENT DETAILS -->
+                <section id="sec-patient" class="bg-white p-5 rounded-xl shadow-sm border border-slate-300">
+                    <h2 class="text-lg font-black mb-4 flex items-center" style="color:#1B3A5C;">
+                        <span class="w-1.5 h-6 mr-2 rounded-full" style="background:#1B3A5C;"></span>1. Patient Details
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Name</label>
+                            <input type="text" id="p_name" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">DOB</label>
+                                <input type="date" id="p_dob" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Age</label>
+                                <input type="number" id="p_age" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Gender</label>
+                            <select id="p_gender" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium bg-white">
+                                <option value=""></option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Non-binary</option>
+                                <option>Other</option>
+                                <option>Prefer not to say</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">NHS Number</label>
+                            <input type="text" id="p_nhs" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Attending With</label>
+                            <select id="p_attending" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium bg-white">
+                                <option value=""></option>
+                                <option>Parent/Carer</option>
+                                <option>Alone</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Presenting Complaint</label>
+                        <textarea id="p_presenting" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium" placeholder="Presenting complaint..."></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Time of Presentation</label>
+                            <input type="time" id="p_time" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Referral Source</label>
+                            <select id="p_referral" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm font-medium bg-white">
+                                <option value=""></option>
+                                <option>Self</option>
+                                <option>Parent</option>
+                                <option>GP</option>
+                                <option>School</option>
+                                <option>Police</option>
+                                <option>Ambulance</option>
+                                <option>CAMHS</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: SAFEGUARDING & RISK -->
+                <section id="sec-safeguarding" class="bg-amber-50 p-5 rounded-xl shadow-sm border-2 border-red-400">
+                    <h2 class="text-lg font-black text-red-800 mb-4 flex items-center">
+                        <span class="w-1.5 h-6 bg-red-600 mr-2 rounded-full"></span>2. Safeguarding &amp; Risk
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-white p-3 rounded-lg border border-red-200">
+                            <span class="block text-xs font-bold text-slate-700 uppercase mb-2">Child Protection Plan?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_cpp" value="Yes" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">Yes</span></label>
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_cpp" value="No" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">No</span></label>
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_cpp" value="Unknown" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">Unknown</span></label>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-red-200">
+                            <span class="block text-xs font-bold text-slate-700 uppercase mb-2">Known to Social Services?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_ss" value="Yes" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">Yes</span></label>
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_ss" value="No" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">No</span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-4 mb-4 bg-white p-3 rounded-lg border border-red-200">
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="sg_lac" class="w-5 h-5 text-red-600 rounded border-gray-400 focus:ring-red-500"><span class="font-bold text-sm">Looked After Child (LAC)</span></label>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-red-200 mb-4">
+                        <span class="block text-xs font-bold text-slate-700 uppercase mb-2">Current CAMHS Involvement?</span>
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_camhs" value="Yes" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">Yes</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_camhs" value="No" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">No</span></label>
+                        </div>
+                        <div id="sg_camhs_details" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 pt-2 border-t border-red-100">
+                            <input type="text" id="sg_camhs_team" placeholder="Team name" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                            <input type="text" id="sg_camhs_coordinator" placeholder="Care coordinator" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-white p-3 rounded-lg border border-red-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Previous ED Attendances for MH</label>
+                            <input type="number" id="sg_prev_ed" min="0" class="w-full px-3 py-2 border border-slate-300 rounded text-sm font-bold">
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-red-200">
+                            <span class="block text-xs font-bold text-slate-700 uppercase mb-2">Previous Admissions for MH?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_prev_admission" value="Yes" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">Yes</span></label>
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="sg_prev_admission" value="No" class="text-red-600 focus:ring-red-500 w-4 h-4"><span class="text-sm">No</span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Current Prescribed Medications</label>
+                        <textarea id="sg_meds" rows="2" class="w-full px-3 py-2 border border-red-200 rounded-md text-sm bg-white" placeholder="List current medications..."></textarea>
+                    </div>
+                </section>
+
+                <!-- SECTION 3: HEADSSS -->
+                <div id="sec-headsss" class="pt-2"><h2 class="text-2xl font-black border-b-4 pb-2" style="color:#1B3A5C; border-color:#1B3A5C;">3. HEADSSS Assessment</h2></div>
+
+                <!-- H - Home -->
+                <section class="bg-white p-5 rounded-xl shadow-sm border-2 border-slate-300 border-l-[8px] border-l-blue-500">
+                    <h3 class="text-xl font-black text-blue-800 mb-1">H — Home</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-2">Who do you live with? Any changes at home recently? How are things at home? Any conflict or abuse at home?</p>
+                    <textarea id="hs_home" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="Clinician findings..."></textarea>
+                </section>
+
+                <!-- E - Education/Employment -->
+                <section class="bg-white p-5 rounded-xl shadow-sm border-2 border-slate-300 border-l-[8px] border-l-sky-500">
+                    <h3 class="text-xl font-black text-sky-700 mb-1">E — Education / Employment</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-2">Are you in school/college/work? How is school going? Any recent changes? Attendance issues? Academic performance?</p>
+                    <textarea id="hs_education" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="Clinician findings..."></textarea>
+                </section>
+
+                <!-- A - Activities -->
+                <section class="bg-white p-5 rounded-xl shadow-sm border-2 border-slate-300 border-l-[8px] border-l-teal-500">
+                    <h3 class="text-xl font-black" style="color:#01696F;">A — Activities</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-2">What do you do for fun? Do you have friends? Have your interests changed recently? Do you feel isolated?</p>
+                    <textarea id="hs_activities" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="Clinician findings..."></textarea>
+                </section>
+
+                <!-- D - Drugs & Alcohol -->
+                <section class="bg-white p-5 rounded-xl shadow-sm border-2 border-slate-300 border-l-[8px] border-l-purple-500">
+                    <h3 class="text-xl font-black text-purple-700 mb-1">D — Drugs &amp; Alcohol</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-2">Do you or your friends use alcohol or drugs? What substances? How often? How much? Any IV drug use?</p>
+                    <div class="mb-3">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Substance Use Category</label>
+                        <select id="hs_drugs_category" class="w-full md:w-1/2 px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                            <option value="">Select...</option>
+                            <option>None</option>
+                            <option>Alcohol only</option>
+                            <option>Cannabis</option>
+                            <option>Other substances</option>
+                            <option>Multiple substances</option>
+                        </select>
+                    </div>
+                    <textarea id="hs_drugs" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="Clinician findings..."></textarea>
+                </section>
+
+                <!-- D - Depression & Mental Health -->
+                <section class="bg-white p-5 rounded-xl shadow-sm border-2 border-slate-300 border-l-[8px] border-l-indigo-500">
+                    <h3 class="text-xl font-black text-indigo-700 mb-1">D — Depression &amp; Mental Health</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-2">Over the past 2 weeks (PHQ-A concepts): Little interest/pleasure? Feeling down/hopeless? Sleep problems? Low energy? Appetite changes? Feeling bad about yourself? Difficulty concentrating? Moving slowly/restless? Thoughts of self-harm/suicide?</p>
+                    <textarea id="hs_depression" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm mb-4" placeholder="Clinician findings..."></textarea>
+                    <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-indigo-800 uppercase">Mood Score (0 = Very Low, 10 = Very Good)</label>
+                            <span id="hs_mood_display" class="text-lg font-black text-indigo-800">5</span>
+                        </div>
+                        <input type="range" min="0" max="10" value="5" id="hs_mood_score" class="mood-slider w-full">
+                    </div>
+                </section>
+
+                <!-- S - Sexuality & Relationships -->
+                <section class="bg-white p-5 rounded-xl shadow-sm border-2 border-slate-300 border-l-[8px] border-l-pink-500">
+                    <h3 class="text-xl font-black text-pink-700 mb-1">S — Sexuality &amp; Relationships</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-2">Are you in a relationship? Have you been sexually active? Do you feel safe in your relationships? Any concerns about sexual health? How do you feel about your gender/sexuality identity?</p>
+                    <textarea id="hs_sexuality" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="Clinician findings..."></textarea>
+                </section>
+
+                <!-- S - Suicide & Self-Harm (RED) -->
+                <section id="sec-suicide" class="bg-red-50 p-5 rounded-xl shadow-sm border-2 border-red-600 border-l-[10px] border-l-red-700">
+                    <h3 class="text-xl font-black text-red-800 mb-1">S — Suicide &amp; Self-Harm <span class="text-xs bg-red-700 text-white px-2 py-0.5 rounded ml-1 align-middle">HIGH PRIORITY</span></h3>
+                    <p class="text-xs text-red-700 font-medium mb-3">Have you had thoughts of harming yourself or ending your life? Have you done anything to hurt yourself? When did this happen? How? What were you thinking/feeling? Do you have a plan? Access to means? Intent to act?</p>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sh_current_si" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Current SI</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sh_previous_si" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Previous SI</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sh_current_sh" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Current SH</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sh_previous_sh" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Previous SH</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sh_plan" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Plan present</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sh_means" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Access to means</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer col-span-2"><input type="checkbox" id="sh_protective" class="w-4 h-4 text-green-600 rounded"><span class="text-xs font-semibold">Protective factors identified</span></label>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-red-200 mb-3">
+                        <span class="block text-xs font-bold text-red-800 uppercase mb-2">Form of Self-Harm (Partners in Paediatrics 2025-28)</span>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Cutting/burning"><span class="text-xs">Cutting / burning</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Self-poisoning"><span class="text-xs">Self-poisoning</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Punching objects"><span class="text-xs">Punching objects</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Self-strangulation"><span class="text-xs">Self-strangulation</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Hair-pulling"><span class="text-xs">Hair-pulling</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Scratching/picking"><span class="text-xs">Scratching / picking</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Inhaling/sniffing harmful substances"><span class="text-xs">Inhaling / sniffing harmful substances</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Swallowing non-food substances"><span class="text-xs">Swallowing non-food substances</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Inserting objects"><span class="text-xs">Inserting objects</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Head banging"><span class="text-xs">Head banging</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="sh-form-check w-4 h-4 text-red-600 rounded" value="Deliberately restricting oral/fluid intake"><span class="text-xs">Deliberately restricting oral/fluid intake</span></label>
+                        </div>
+                    </div>
+
+                    <textarea id="hs_suicide" rows="3" class="w-full px-3 py-2 border border-red-300 rounded-md text-sm bg-white mb-3" placeholder="Clinician findings — detail, timeline, lethality, intent..."></textarea>
+
+                    <div class="bg-white p-3 rounded-lg border border-red-200 mb-3">
+                        <span class="block text-xs font-bold text-red-800 uppercase mb-2">Assessment Coverage (per hospital guideline)</span>
+                        <p class="text-[11px] text-slate-500 font-medium mb-2">Remorse/regret · Who knows · Frequency · Risk from others · Stressors (bullying, bereavement, relationships, abuse, sexuality) · Drugs/alcohol · Education · Family/social · Support network · Child protection</p>
+                        <textarea id="sh_assessment_coverage" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="Document findings against each area above..."></textarea>
+                    </div>
+
+                    <div class="bg-red-100 p-3 rounded-lg border-2 border-red-400 mb-3">
+                        <span class="block text-xs font-bold text-red-900 uppercase mb-2">Priority Referral Team (PRT) Criteria</span>
+                        <p class="text-[11px] text-red-800 font-medium mb-2">Deliberate SH (overdose, self-strangulation, serious cuts) · Deliberate harm from substance misuse with SH intent · MH symptoms: depression/active suicidality, psychotic symptoms, aggression/severe agitation · Low weight anorexia (BMI &lt;17.5 or rapid weight loss). If met, refer ASAP for same-day review.</p>
+                        <div class="flex items-center gap-4">
+                            <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 border border-red-300 rounded"><input type="checkbox" id="sh_prt_criteria_met" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-bold">PRT Criteria Met</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 border border-red-300 rounded"><input type="checkbox" id="sh_prt_referral_made" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-bold">Same-Day PRT Referral Made</span></label>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-red-200 mb-3">
+                        <span class="block text-xs font-bold text-red-800 uppercase mb-2">Management Pathway</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">CAMHS Crisis / Liaison Contacted?</label>
+                                <select id="sh_camhs_crisis" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white">
+                                    <option value="">Select...</option>
+                                    <option>Yes — Crisis Team</option>
+                                    <option>Yes — Liaison Team</option>
+                                    <option>Not available — admitted overnight</option>
+                                    <option>Not required</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Section 136?</label>
+                                <select id="sh_section136" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white">
+                                    <option value="">Select...</option>
+                                    <option>Yes — Police accompanied, CAMHS crisis/on-call contacted</option>
+                                    <option>No</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-red-200">
+                        <span class="block text-xs font-bold text-red-800 uppercase mb-2">Consent for CAMHS Referral</span>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Consent Given By</label>
+                                <select id="sh_consent_by" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white">
+                                    <option value="">Select...</option>
+                                    <option>Parent/Carer with parental responsibility</option>
+                                    <option>Young person (Gillick competent)</option>
+                                    <option>Not obtained</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Consent Obtained By (name/role)</label>
+                                <input type="text" id="sh_consent_obtained_by" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Date/Time Consent Obtained</label>
+                                <input type="datetime-local" id="sh_consent_datetime" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- S - Safety -->
+                <section class="bg-red-50 p-5 rounded-xl shadow-sm border-2 border-red-500 border-l-[8px] border-l-red-600">
+                    <h3 class="text-xl font-black text-red-800 mb-1">S — Safety <span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded ml-1 align-middle">SAFEGUARDING</span></h3>
+                    <p class="text-xs text-red-700 font-medium mb-3">Do you feel safe at home? At school? Online? In your relationship? Have you experienced abuse (physical/emotional/sexual)? Are you involved in any risky situations (county lines, exploitation, gangs)?</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_physical" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Physical abuse concern</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_emotional" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Emotional abuse</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_sexual" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Sexual abuse</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_exploitation" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Exploitation</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_online" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Online safety</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_countylines" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">County lines</span></label>
+                        <label class="flex items-center space-x-2 bg-white border border-red-300 rounded p-2 cursor-pointer"><input type="checkbox" id="sf_cse" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">CSE concern</span></label>
+                    </div>
+                    <textarea id="hs_safety" rows="3" class="w-full px-3 py-2 border border-red-300 rounded-md text-sm bg-white" placeholder="Clinician findings..."></textarea>
+                </section>
+
+                <!-- SECTION 4: MSE -->
+                <div id="sec-mse" class="pt-2"><h2 class="text-2xl font-black border-b-4 pb-2" style="color:#1B3A5C; border-color:#1B3A5C;">4. Mental State Examination</h2></div>
+
+                <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-300">
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Appearance &amp; Behaviour</label>
+                        <textarea id="mse_appearance" rows="2" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Speech</label>
+                            <select id="mse_speech" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white mb-2">
+                                <option value="">Select...</option>
+                                <option>Normal</option>
+                                <option>Pressured</option>
+                                <option>Slowed</option>
+                                <option>Reduced</option>
+                                <option>Other</option>
+                            </select>
+                            <input type="text" id="mse_speech_notes" placeholder="Speech notes..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Mood (patient's own words)</label>
+                            <textarea id="mse_mood" rows="2" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="e.g. 'I feel empty'"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Affect</label>
+                            <select id="mse_affect" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                                <option value="">Select...</option>
+                                <option>Congruent</option>
+                                <option>Incongruent</option>
+                                <option>Flat</option>
+                                <option>Labile</option>
+                                <option>Anxious</option>
+                                <option>Elated</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Thought Form</label>
+                            <select id="mse_thoughtform" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                                <option value="">Select...</option>
+                                <option>Normal</option>
+                                <option>Circumstantial</option>
+                                <option>Tangential</option>
+                                <option>Flight of ideas</option>
+                                <option>Thought block</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Thought Content</span>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_si" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Suicidal ideation</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_hi" class="w-4 h-4 text-red-600 rounded"><span class="text-xs font-semibold">Homicidal ideation</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_paranoid" class="w-4 h-4 text-slate-600 rounded"><span class="text-xs font-semibold">Paranoid ideation</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_obsessional" class="w-4 h-4 text-slate-600 rounded"><span class="text-xs font-semibold">Obsessional thoughts</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_hallauditory" class="w-4 h-4 text-slate-600 rounded"><span class="text-xs font-semibold">Hallucinations (auditory)</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_hallvisual" class="w-4 h-4 text-slate-600 rounded"><span class="text-xs font-semibold">Hallucinations (visual)</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="tc_delusions" class="w-4 h-4 text-slate-600 rounded"><span class="text-xs font-semibold">Delusions</span></label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Perception</label>
+                        <textarea id="mse_perception" rows="2" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-300">
+                            <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Cognition</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="text-[11px] font-semibold text-slate-500 block mb-1">Orientated</span>
+                                    <div class="flex gap-2">
+                                        <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="mse_orientated" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-xs">Y</span></label>
+                                        <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="mse_orientated" value="No" class="text-teal-600 w-4 h-4"><span class="text-xs">N</span></label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-[11px] font-semibold text-slate-500 block mb-1">Concentration</span>
+                                    <div class="flex gap-2">
+                                        <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="mse_concentration" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-xs">Y</span></label>
+                                        <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="mse_concentration" value="No" class="text-teal-600 w-4 h-4"><span class="text-xs">N</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Insight</label>
+                            <select id="mse_insight" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                                <option value="">Select...</option>
+                                <option>Good</option>
+                                <option>Partial</option>
+                                <option>Absent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Risk Summary</label>
+                        <textarea id="mse_risksummary" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm"></textarea>
+                    </div>
+                </section>
+
+                <!-- SECTION 5: RISK STRATIFICATION -->
+                <section id="sec-risk" class="bg-white p-5 rounded-xl shadow-sm border-2 border-amber-400">
+                    <h2 class="text-lg font-black text-amber-800 mb-4 flex items-center">
+                        <span class="w-1.5 h-6 bg-amber-500 mr-2 rounded-full"></span>5. Risk Stratification
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <label class="risk-radio-card cursor-pointer">
+                            <input type="radio" name="risk_level" value="HIGH" class="sr-only peer">
+                            <div class="p-4 rounded-xl border-2 border-red-300 bg-red-50 peer-checked:bg-red-600 peer-checked:border-red-700 peer-checked:text-white transition text-center">
+                                <div class="font-black text-lg mb-1">🔴 HIGH RISK</div>
+                                <p class="text-[11px] font-medium leading-snug">Active SI with plan/intent, active psychosis, severe self-harm, unable to maintain safety</p>
+                            </div>
+                        </label>
+                        <label class="risk-radio-card cursor-pointer">
+                            <input type="radio" name="risk_level" value="MODERATE" class="sr-only peer">
+                            <div class="p-4 rounded-xl border-2 border-amber-300 bg-amber-50 peer-checked:bg-amber-500 peer-checked:border-amber-600 peer-checked:text-white transition text-center">
+                                <div class="font-black text-lg mb-1">🟠 MODERATE RISK</div>
+                                <p class="text-[11px] font-medium leading-snug">Passive SI, recent SH, significant distress, protective factors limited</p>
+                            </div>
+                        </label>
+                        <label class="risk-radio-card cursor-pointer">
+                            <input type="radio" name="risk_level" value="LOW" class="sr-only peer">
+                            <div class="p-4 rounded-xl border-2 border-green-300 bg-green-50 peer-checked:bg-green-600 peer-checked:border-green-700 peer-checked:text-white transition text-center">
+                                <div class="font-black text-lg mb-1">🟢 LOW RISK</div>
+                                <p class="text-[11px] font-medium leading-snug">No current SI/SH, good protective factors, mild-moderate distress</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Risk Rationale</label>
+                        <textarea id="risk_rationale" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm" placeholder="Rationale for risk level assigned..."></textarea>
+                    </div>
+                </section>
+
+                <!-- SECTION 6: MANAGEMENT PLAN -->
+                <section id="sec-plan" class="bg-white p-5 rounded-xl shadow-sm border border-slate-300">
+                    <h2 class="text-lg font-black mb-4 flex items-center" style="color:#1B3A5C;">
+                        <span class="w-1.5 h-6 mr-2 rounded-full" style="background:#01696F;"></span>6. Management Plan
+                    </h2>
+
+                    <div class="mb-4">
+                        <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Bloods Ordered</span>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="FBC"><span class="text-xs font-semibold">FBC</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="U&E"><span class="text-xs font-semibold">U&amp;E</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="TFTs"><span class="text-xs font-semibold">TFTs</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="Blood glucose"><span class="text-xs font-semibold">Blood glucose</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="Tox screen"><span class="text-xs font-semibold">Tox screen</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="Pregnancy test"><span class="text-xs font-semibold">Pregnancy test</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="BHCG"><span class="text-xs font-semibold">BHCG</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" class="blood-check w-4 h-4 text-teal-600 rounded" value="LFTs"><span class="text-xs font-semibold">LFTs</span></label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-300">
+                            <span class="block text-xs font-bold text-slate-600 uppercase mb-2">ECG Performed?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_ecg" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-sm">Yes</span></label>
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_ecg" value="No" class="text-teal-600 w-4 h-4"><span class="text-sm">No</span></label>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-300">
+                            <span class="block text-xs font-bold text-slate-600 uppercase mb-2">CAMHS Contacted?</span>
+                            <select id="mp_camhs_contacted" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                                <option value="">Select...</option>
+                                <option>Yes</option>
+                                <option>No</option>
+                                <option>Not required</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 bg-slate-50 p-3 rounded-lg border border-slate-300">
+                        <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Safeguarding Referral Made?</span>
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_sg_referral" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-sm">Yes</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_sg_referral" value="No" class="text-teal-600 w-4 h-4"><span class="text-sm">No</span></label>
+                        </div>
+                        <input type="text" id="mp_sg_referral_to" placeholder="Referred to whom..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm hidden">
+                    </div>
+
+                    <div class="mb-4 bg-slate-50 p-3 rounded-lg border border-slate-300">
+                        <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Inpatient Referral?</span>
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_inpatient" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-sm">Yes</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_inpatient" value="No" class="text-teal-600 w-4 h-4"><span class="text-sm">No</span></label>
+                        </div>
+                        <div id="mp_inpatient_bed_wrap" class="hidden">
+                            <span class="text-xs font-semibold text-slate-600 mr-2">Bed requested?</span>
+                            <label class="mr-3"><input type="radio" name="mp_bed_requested" value="Yes" class="text-teal-600 w-4 h-4"> Yes</label>
+                            <label><input type="radio" name="mp_bed_requested" value="No" class="text-teal-600 w-4 h-4"> No</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Disposition</label>
+                        <select id="mp_disposition" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                            <option value="">Select...</option>
+                            <option>Discharge to home with safety plan</option>
+                            <option>Discharge with CAMHS follow-up</option>
+                            <option>ED observation</option>
+                            <option>Voluntary admission</option>
+                            <option>MHA assessment</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-300 mb-4">
+                        <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Safety Plan Completed?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_safety_plan" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-sm">Yes</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="mp_safety_plan" value="No" class="text-teal-600 w-4 h-4"><span class="text-sm">No</span></label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Responsible Clinician</label>
+                            <input type="text" id="mp_clinician" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Senior Review By</label>
+                            <input type="text" id="mp_senior_review" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 7: OUTCOME & DISPOSITION -->
+                <section id="sec-outcome" class="p-5 rounded-xl shadow-sm border border-slate-300" style="background:#f0f9fa;">
+                    <h2 class="text-lg font-black mb-4 flex items-center" style="color:#1B3A5C;">
+                        <span class="w-1.5 h-6 mr-2 rounded-full" style="background:#1B3A5C;"></span>7. Outcome &amp; Disposition
+                    </h2>
+
+                    <div class="bg-white p-3 rounded-lg border-2 border-teal-300 mb-4">
+                        <span class="block text-xs font-bold uppercase mb-2" style="color:#01696F;">Discharge Readiness Checklist (Partners in Paediatrics)</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="dc_medically_fit" class="w-4 h-4 text-teal-600 rounded"><span class="text-xs font-semibold">Medically fit for discharge</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="dc_psychologically_stable" class="w-4 h-4 text-teal-600 rounded"><span class="text-xs font-semibold">Psychologically stable (assessed by PRT)</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="dc_camhs_plan" class="w-4 h-4 text-teal-600 rounded"><span class="text-xs font-semibold">CAMHS management plan in place</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="dc_social_care_referral" class="w-4 h-4 text-teal-600 rounded"><span class="text-xs font-semibold">Children's social care referral made (if safety concerns)</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="dc_gp_aware" class="w-4 h-4 text-teal-600 rounded"><span class="text-xs font-semibold">GP informed</span></label>
+                            <label class="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded p-2 cursor-pointer"><input type="checkbox" id="dc_school_nurse_aware" class="w-4 h-4 text-teal-600 rounded"><span class="text-xs font-semibold">School nurse informed</span></label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Outcome Notes</label>
+                        <textarea id="out_notes" rows="3" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Time of Disposition</label>
+                            <input type="time" id="out_time" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white">
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-300">
+                            <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Information Given to Patient/Carer?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="out_info_given" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-sm">Yes</span></label>
+                                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="out_info_given" value="No" class="text-teal-600 w-4 h-4"><span class="text-sm">No</span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 bg-white p-3 rounded-lg border border-slate-300">
+                        <span class="block text-xs font-bold text-slate-600 uppercase mb-2">Follow-up Arranged?</span>
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="out_followup" value="Yes" class="text-teal-600 w-4 h-4"><span class="text-sm">Yes</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="out_followup" value="No" class="text-teal-600 w-4 h-4"><span class="text-sm">No</span></label>
+                        </div>
+                        <textarea id="out_followup_details" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" placeholder="Follow-up details..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Consent Documentation Note</label>
+                        <textarea id="out_consent" rows="2" class="w-full px-3 py-2 border border-slate-400 rounded-md text-sm bg-white" placeholder="Consent / Gillick competence / capacity notes..."></textarea>
+                    </div>
+                </section>
+
+                <footer class="mt-8 py-8 text-center border-t border-slate-300">
+                    <p class="text-xs text-slate-500 font-bold mb-1">Paediatric Mental Health Assessment Tool — Based on RCPCH / NICE Guidance</p>
+                </footer>
+            </div>
+
+            <div class="lg:col-span-5 xl:col-span-4 relative" id="rightPanel">
+                <div class="sticky top-28 space-y-6">
+                    <section class="bg-white p-4 rounded-xl shadow-lg border border-slate-300">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide">EPR Note</h2>
+                            <div class="flex gap-2">
+                                <button id="copy-rich-text-btn" onclick="copyRichText()" class="px-3 py-1 text-xs font-bold text-white bg-blue-600 rounded hover:opacity-90 transition shadow-sm">Copy Rich Text</button>
+                                <button onclick="window.print()" class="px-3 py-1 text-xs font-bold bg-slate-600 text-white rounded hover:bg-slate-700 transition shadow-sm">🖨️ Print</button>
+                            </div>
+                        </div>
+                        <div id="epr-output" contenteditable="true" class="rich-output focus:ring-2 ring-teal-500 ring-offset-2"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

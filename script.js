@@ -1,3 +1,50 @@
+
+function copyRichText() {
+    var el = document.getElementById('epr-output');
+    if (!el) return;
+    var htmlContent = el.innerHTML;
+    var plainText = el.innerText;
+    var copyBtn = document.getElementById('copy-rich-text-btn');
+    function flashBtn(ok) {
+        if (!copyBtn) return;
+        var orig = copyBtn.textContent;
+        copyBtn.textContent = ok ? '\u2713 Copied!' : 'Copy failed';
+        copyBtn.style.background = ok ? '#16a34a' : '#dc2626';
+        setTimeout(function() {
+            copyBtn.textContent = orig;
+            copyBtn.style.background = '';
+        }, 1500);
+    }
+    if (navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard.write([
+            new ClipboardItem({
+                'text/html':  new Blob([htmlContent], { type: 'text/html' }),
+                'text/plain': new Blob([plainText],  { type: 'text/plain' })
+            })
+        ]).then(function() { flashBtn(true); })
+          .catch(function() {
+            navigator.clipboard.writeText(plainText)
+                .then(function() { flashBtn(true); })
+                .catch(function() { flashBtn(false); });
+        });
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(plainText)
+            .then(function() { flashBtn(true); })
+            .catch(function() { flashBtn(false); });
+    } else {
+        try {
+            var range = document.createRange();
+            range.selectNodeContents(el);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.execCommand('copy');
+            sel.removeAllRanges();
+            flashBtn(true);
+        } catch(e) { flashBtn(false); }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const DATA_VERSION = '1.0';
     const STORAGE_KEY = 'paed_mh_data';
@@ -514,51 +561,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- COPY RICH TEXT (required exact implementation) ---
-    async function copyRichText() {
-        const el = document.getElementById('epr-output');
-        if (!el) return;
-        const htmlContent = el.innerHTML;
-        const plainText = el.innerText;
-        const copyBtn = document.getElementById('copy-rich-text-btn');
-        try {
-            if (navigator.clipboard && window.ClipboardItem) {
-                await navigator.clipboard.write([
-                    new ClipboardItem({
-                        'text/html': new Blob([htmlContent], { type: 'text/html' }),
-                        'text/plain': new Blob([plainText], { type: 'text/plain' })
-                    })
-                ]);
-            } else {
-                await navigator.clipboard.writeText(plainText);
-            }
-            if (copyBtn) {
-                const orig = copyBtn.textContent;
-                copyBtn.textContent = '\u2713 Copied!';
-                copyBtn.classList.add('bg-green-600');
-                copyBtn.classList.remove('bg-blue-600');
-                setTimeout(() => {
-                    copyBtn.textContent = orig;
-                    copyBtn.classList.remove('bg-green-600');
-                    copyBtn.classList.add('bg-blue-600');
-                }, 1500);
-            }
-        } catch(e) {
-            // Fallback: select and copy
-            const range = document.createRange();
-            range.selectNodeContents(el);
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            document.execCommand('copy');
-            sel.removeAllRanges();
-            if (copyBtn) { copyBtn.textContent = '\u2713 Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy Rich Text'; }, 1500); }
-        }
-    }
-    // Expose globally for inline onclick="copyRichText()" handlers
-    window.copyRichText = copyRichText;
-
-    // --- INIT ---
-    attachAllListeners();
-    loadState();
-    updateNotes();
-});
+    );

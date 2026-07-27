@@ -63,6 +63,50 @@
         }
         .print-note { display: none; }
     </style>
+<style>
+/* ── SharePoint-safe two-column layout ───────────────────── */
+.app-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+    align-items: start;
+}
+.app-main-col {
+    min-width: 0;
+}
+.app-epr-col {
+    position: sticky;
+    top: 72px;
+    max-height: calc(100vh - 82px);
+    overflow-y: auto;
+}
+@media print {
+    .app-epr-col { display: none !important; }
+    .app-grid { display: block !important; }
+}
+</style>
+<style>
+/* ── SharePoint-safe two-column layout ───────────────────── */
+.app-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+    align-items: start;
+}
+.app-main-col {
+    min-width: 0;
+}
+.app-epr-col {
+    position: sticky;
+    top: 72px;
+    max-height: calc(100vh - 82px);
+    overflow-y: auto;
+}
+@media print {
+    .app-epr-col { display: none !important; }
+    .app-grid { display: block !important; }
+}
+</style>
 </head>
 <body class="bg-slate-100 text-slate-900 antialiased pb-10">
 
@@ -95,7 +139,7 @@
                 <a href="#sec-plan" class="nav-link bg-white/90">Plan</a>
                 <a href="#sec-outcome" class="nav-link bg-white/90">Outcome</a>
                 <div class="flex-1"></div>
-                <button id="copyRichTextTop" onclick="copyRichText()" class="px-3 py-1.5 text-[11px] font-bold text-white rounded transition bg-blue-600">Copy Rich Text</button>
+                <button id="copy-rich-text-btn" id="copyRichTextTop" onclick="copyRichText()" class="px-3 py-1.5 text-[11px] font-bold text-white rounded transition bg-blue-600">Copy Rich Text</button>
                 <button id="printBtn" class="px-3 py-1.5 text-[11px] font-bold text-white bg-slate-600 hover:bg-slate-700 rounded transition">🖨️ Print</button>
                 <button id="resetData" class="px-3 py-1.5 text-[11px] font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition">RESET</button>
             </nav>
@@ -103,7 +147,7 @@
     </header>
 
     <main class="container mx-auto px-4 py-6">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="app-grid">
 
             <div class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-6">
 

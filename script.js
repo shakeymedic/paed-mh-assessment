@@ -426,35 +426,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return '#334155';
     }
 
+    function ph(text) {
+        return `<span style="color:#94a3b8">[${text}]</span>`;
+    }
+    function normalTag() { return `<span style="color:#16a34a">Normal/Negative</span>`; }
+    function fieldVal(v, placeholder) {
+        return v ? esc(v) : ph(placeholder || 'not recorded');
+    }
+    function heading(text) {
+        return `<br><b style="font-weight:bold;">${text}</b><br>`;
+    }
+
     function updateNotes() {
         const p = data;
         const noteTime = getNow();
-        let h = `<b style="font-weight:bold;">PAEDIATRIC MENTAL HEALTH ASSESSMENT</b> <span style="font-size:0.85em;color:#64748b;">(Note generated: ${noteTime})</span><br><br>`;
+        let h = `<b style="font-weight:bold;">PAEDIATRIC MENTAL HEALTH ASSESSMENT</b> <span style="font-size:0.85em;color:#64748b;">(Note generated: ${noteTime})</span><br>`;
 
-        // Patient summary
-        h += `<b style="font-weight:bold;">Patient:</b> ${esc(p.patient.name) || '\u2014'} | DOB: ${esc(p.patient.dob) || '\u2014'} | Age: ${esc(p.patient.age) || '\u2014'} | Gender: ${esc(p.patient.gender) || '\u2014'}<br>`;
-        h += `NHS Number: ${esc(p.patient.nhs) || '\u2014'} | Attending with: ${esc(p.patient.attending) || '\u2014'}<br>`;
-        h += `Time of Presentation: ${esc(p.patient.time) || '\u2014'} | Referral Source: ${esc(p.patient.referral) || '\u2014'}<br>`;
-        if (p.patient.presenting) h += `<b style="font-weight:bold;">Presenting Complaint:</b> ${esc(p.patient.presenting)}<br>`;
+        // PATIENT DETAILS
+        h += heading('PATIENT DETAILS');
+        h += `Name: ${fieldVal(p.patient.name)} | DOB: ${fieldVal(p.patient.dob)} | Age: ${fieldVal(p.patient.age)} | Gender: ${fieldVal(p.patient.gender)}<br>`;
+        h += `NHS Number: ${fieldVal(p.patient.nhs)} | Attending with: ${fieldVal(p.patient.attending)} | Referral: ${fieldVal(p.patient.referral)}<br>`;
+        h += `Time of Presentation: ${fieldVal(p.patient.time)}<br>`;
+        h += `Presenting complaint: ${fieldVal(p.patient.presenting)}<br>`;
 
-        // Safeguarding
-        h += `<br><b style="font-weight:bold;">Safeguarding Status</b><br>`;
-        const cppFlag = p.safeguarding.cpp === 'Yes' ? ' <b style="color:#dc2626;">\u26A0\uFE0F</b>' : '';
-        h += `Child Protection Plan: ${esc(p.safeguarding.cpp) || 'Not recorded'}${cppFlag} | LAC: ${p.safeguarding.lac ? 'Yes' : 'No'} | Known to Social Services: ${esc(p.safeguarding.ss) || 'Not recorded'}<br>`;
-        let camhsLine = `Current CAMHS Involvement: ${esc(p.safeguarding.camhs) || 'Not recorded'}`;
-        if (p.safeguarding.camhs === 'Yes') camhsLine += ` (Team: ${esc(p.safeguarding.camhsTeam) || '\u2014'}, Coordinator: ${esc(p.safeguarding.camhsCoordinator) || '\u2014'})`;
+        // SAFEGUARDING STATUS
+        h += heading('SAFEGUARDING STATUS');
+        const cppFlag = p.safeguarding.cpp === 'Yes'
+            ? `<span style="color:#dc2626;font-weight:bold">⚠️ POSITIVE: Yes</span>`
+            : (p.safeguarding.cpp === 'No' ? normalTag() : ph('not recorded'));
+        h += `Child protection plan: ${cppFlag} | LAC: ${p.safeguarding.lac ? '<span style="color:#dc2626;font-weight:bold">⚠️ Yes</span>' : 'No'} | Known to social services: ${fieldVal(p.safeguarding.ss)}<br>`;
+        let camhsLine = `CAMHS involvement: ${fieldVal(p.safeguarding.camhs)}`;
+        if (p.safeguarding.camhs === 'Yes') camhsLine += ` (Team: ${fieldVal(p.safeguarding.camhsTeam)}, Coordinator: ${fieldVal(p.safeguarding.camhsCoordinator)})`;
         h += camhsLine + `<br>`;
-        h += `Previous ED Attendances for MH: ${esc(p.safeguarding.prevEd) || '0'} | Previous Admissions for MH: ${esc(p.safeguarding.prevAdmission) || 'Not recorded'}<br>`;
-        if (p.safeguarding.meds) h += `Current Prescribed Medications: ${esc(p.safeguarding.meds)}<br>`;
+        h += `Previous ED attendances (MH): ${p.safeguarding.prevEd ? esc(p.safeguarding.prevEd) : ph('not recorded')} | Previous MH admissions: ${fieldVal(p.safeguarding.prevAdmission)}<br>`;
+        h += `Current medications: ${fieldVal(p.safeguarding.meds, 'none recorded')}<br>`;
 
-        // HEADSSS
-        h += `<br><b style="font-weight:bold;">HEADSSS ASSESSMENT</b><br>`;
-        h += `<b style="font-weight:bold;">H (Home):</b> ${esc(p.headsss.home) || 'No concerns reported'}<br>`;
-        h += `<b style="font-weight:bold;">E (Education/Employment):</b> ${esc(p.headsss.education) || 'No concerns reported'}<br>`;
-        h += `<b style="font-weight:bold;">A (Activities):</b> ${esc(p.headsss.activities) || 'No concerns reported'}<br>`;
-        h += `<b style="font-weight:bold;">D (Drugs &amp; Alcohol):</b> ${esc(p.headsss.drugsCategory) || 'Not assessed'}${p.headsss.drugs ? ' \u2014 ' + esc(p.headsss.drugs) : ''}<br>`;
-        h += `<b style="font-weight:bold;">D (Depression &amp; Mental Health):</b> Mood score ${esc(p.headsss.moodScore)}/10. ${esc(p.headsss.depression) || 'No concerns reported'}<br>`;
-        h += `<b style="font-weight:bold;">S (Sexuality &amp; Relationships):</b> ${esc(p.headsss.sexuality) || 'No concerns reported'}<br>`;
+        // HEADSSS ASSESSMENT
+        h += heading('HEADSSS ASSESSMENT');
+        h += `Home: ${fieldVal(p.headsss.home, 'not assessed')}<br>`;
+        h += `Education/Employment: ${fieldVal(p.headsss.education, 'not assessed')}<br>`;
+        h += `Activities: ${fieldVal(p.headsss.activities, 'not assessed')}<br>`;
+        h += `Drugs &amp; Alcohol: ${fieldVal(p.headsss.drugsCategory, 'not assessed')}${p.headsss.drugs ? ' — ' + esc(p.headsss.drugs) : ''}<br>`;
+        h += `Depression/Mental Health: ${fieldVal(p.headsss.depression, 'not assessed')} | Mood score: ${esc(p.headsss.moodScore) || ph('not recorded')}/10<br>`;
+        h += `Sexuality &amp; Relationships: ${fieldVal(p.headsss.sexuality, 'not assessed')}<br>`;
 
         const shFlags = [];
         if (p.headsss.suicide.currentSI) shFlags.push('Current SI');
@@ -465,21 +479,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.headsss.suicide.means) shFlags.push('Access to means');
         if (p.headsss.suicide.protective) shFlags.push('Protective factors identified');
         const hasActiveRisk = p.headsss.suicide.currentSI || p.headsss.suicide.currentSH || p.headsss.suicide.plan || p.headsss.suicide.means;
-        h += `<b style="font-weight:bold;${hasActiveRisk ? 'color:#dc2626;' : ''}">S (Suicide &amp; Self-Harm):</b> ${shFlags.length ? shFlags.join(', ') : 'None identified'}. ${esc(p.headsss.suicide.notes) || ''}<br>`;
-        if (p.headsss.suicide.forms && p.headsss.suicide.forms.length) h += `&nbsp;&nbsp;Form(s) of Self-Harm: ${p.headsss.suicide.forms.join(', ')}<br>`;
-        if (p.headsss.suicide.assessmentCoverage) h += `&nbsp;&nbsp;Assessment Coverage: ${esc(p.headsss.suicide.assessmentCoverage)}<br>`;
-        if (p.headsss.suicide.prtCriteriaMet || p.headsss.suicide.prtReferralMade) {
-            h += `&nbsp;&nbsp;<b style="font-weight:bold;color:#dc2626;">PRT Criteria Met:</b> ${p.headsss.suicide.prtCriteriaMet ? 'Yes' : 'No'} | Same-Day PRT Referral Made: ${p.headsss.suicide.prtReferralMade ? 'Yes' : 'No'}<br>`;
-        }
-        if (p.headsss.suicide.camhsCrisis) h += `&nbsp;&nbsp;CAMHS Crisis/Liaison: ${esc(p.headsss.suicide.camhsCrisis)}<br>`;
-        if (p.headsss.suicide.section136) h += `&nbsp;&nbsp;Section 136: ${esc(p.headsss.suicide.section136)}<br>`;
-        if (p.headsss.suicide.consentBy || p.headsss.suicide.consentObtainedBy) {
-            h += `&nbsp;&nbsp;Consent for CAMHS Referral: ${esc(p.headsss.suicide.consentBy) || 'Not recorded'}`;
-            if (p.headsss.suicide.consentObtainedBy) h += ` (obtained by ${esc(p.headsss.suicide.consentObtainedBy)}`;
-            if (p.headsss.suicide.consentDateTime) h += ` on ${esc(p.headsss.suicide.consentDateTime)}`;
-            if (p.headsss.suicide.consentObtainedBy) h += `)`;
-            h += `<br>`;
-        }
+        const shText = shFlags.length
+            ? (hasActiveRisk ? `<span style="color:#dc2626;font-weight:bold">⚠️ POSITIVE: ${shFlags.join(', ')}</span>` : `<span style="color:#d97706;font-weight:bold">⚠️ ${shFlags.join(', ')}</span>`)
+            : `<span style="color:#16a34a">None reported</span>`;
+        h += `<b style="font-weight:bold;">⚠️ SUICIDE &amp; SELF-HARM:</b> ${shText}${p.headsss.suicide.notes ? ' — ' + esc(p.headsss.suicide.notes) : ''}<br>`;
+        h += `&nbsp;&nbsp;Form(s) of self-harm: ${(p.headsss.suicide.forms && p.headsss.suicide.forms.length) ? esc(p.headsss.suicide.forms.join(', ')) : ph('not applicable')}<br>`;
+        h += `&nbsp;&nbsp;Assessment coverage: ${fieldVal(p.headsss.suicide.assessmentCoverage)}<br>`;
+        h += `&nbsp;&nbsp;PRT criteria met: ${p.headsss.suicide.prtCriteriaMet ? '<span style="color:#dc2626;font-weight:bold">⚠️ Yes</span>' : 'No'} | Same-day PRT referral made: ${p.headsss.suicide.prtReferralMade ? 'Yes' : 'No'}<br>`;
+        h += `&nbsp;&nbsp;CAMHS crisis/liaison: ${fieldVal(p.headsss.suicide.camhsCrisis)}<br>`;
+        h += `&nbsp;&nbsp;Section 136: ${fieldVal(p.headsss.suicide.section136)}<br>`;
+        h += `&nbsp;&nbsp;Consent for CAMHS referral: ${fieldVal(p.headsss.suicide.consentBy)}`;
+        h += ` (obtained by ${fieldVal(p.headsss.suicide.consentObtainedBy)}`;
+        h += p.headsss.suicide.consentDateTime ? ` on ${esc(p.headsss.suicide.consentDateTime)})` : `)`;
+        h += `<br>`;
 
         const sfFlags = [];
         if (p.headsss.safety.physical) sfFlags.push('Physical abuse concern');
@@ -489,14 +501,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.headsss.safety.online) sfFlags.push('Online safety concern');
         if (p.headsss.safety.countylines) sfFlags.push('County lines');
         if (p.headsss.safety.cse) sfFlags.push('CSE concern');
-        h += `<b style="font-weight:bold;${sfFlags.length ? 'color:#dc2626;' : ''}">S (Safety):</b> ${sfFlags.length ? sfFlags.join(', ') : 'No safety concerns identified'}. ${esc(p.headsss.safety.notes) || ''}<br>`;
+        const sfText = sfFlags.length
+            ? `<span style="color:#dc2626;font-weight:bold">⚠️ POSITIVE: ${sfFlags.join(', ')}</span>`
+            : `<span style="color:#16a34a">No concerns identified</span>`;
+        h += `Safety: ${sfText}${p.headsss.safety.notes ? ' — ' + esc(p.headsss.safety.notes) : ''}<br>`;
 
-        // MSE
-        h += `<br><b style="font-weight:bold;">MENTAL STATE EXAMINATION</b><br>`;
-        h += `Appearance &amp; Behaviour: ${esc(p.mse.appearance) || '\u2014'}<br>`;
-        h += `Speech: ${esc(p.mse.speech) || '\u2014'}${p.mse.speechNotes ? ' (' + esc(p.mse.speechNotes) + ')' : ''}<br>`;
-        h += `Mood (subjective): "${esc(p.mse.mood) || '\u2014'}" | Affect: ${esc(p.mse.affect) || '\u2014'}<br>`;
-        h += `Thought Form: ${esc(p.mse.thoughtForm) || '\u2014'}<br>`;
+        // MENTAL STATE EXAMINATION
+        h += heading('MENTAL STATE EXAMINATION');
+        h += `Appearance: ${fieldVal(p.mse.appearance)} | Speech: ${fieldVal(p.mse.speech)}${p.mse.speechNotes ? ' (' + esc(p.mse.speechNotes) + ')' : ''} | Mood: ${fieldVal(p.mse.mood)} | Affect: ${fieldVal(p.mse.affect)}<br>`;
+        h += `Thought form: ${fieldVal(p.mse.thoughtForm)}<br>`;
         const tcFlags = [];
         if (p.mse.content.si) tcFlags.push('Suicidal ideation');
         if (p.mse.content.hi) tcFlags.push('Homicidal ideation');
@@ -505,39 +518,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.mse.content.hallAuditory) tcFlags.push('Hallucinations (auditory)');
         if (p.mse.content.hallVisual) tcFlags.push('Hallucinations (visual)');
         if (p.mse.content.delusions) tcFlags.push('Delusions');
-        h += `Thought Content: ${tcFlags.length ? tcFlags.join(', ') : 'No abnormal thought content elicited'}<br>`;
-        h += `Perception: ${esc(p.mse.perception) || '\u2014'}<br>`;
-        h += `Cognition: Orientated ${esc(p.mse.orientated) || '\u2014'} | Concentration ${esc(p.mse.concentration) || '\u2014'}<br>`;
-        h += `Insight: ${esc(p.mse.insight) || '\u2014'}<br>`;
-        if (p.mse.riskSummary) h += `Risk Summary: ${esc(p.mse.riskSummary)}<br>`;
+        const tcText = tcFlags.length
+            ? `<span style="color:#dc2626;font-weight:bold">⚠️ POSITIVE: ${tcFlags.join(', ')}</span>`
+            : `<span style="color:#16a34a">No abnormal thought content identified</span>`;
+        h += `Thought content: ${tcText}<br>`;
+        h += `Insight: ${fieldVal(p.mse.insight)}<br>`;
+        h += `Risk summary: ${fieldVal(p.mse.riskSummary)}<br>`;
 
-        // Risk
-        h += `<br><b style="font-weight:bold;">RISK LEVEL:</b> `;
-        if (p.risk.level) {
-            h += `<b style="font-weight:bold;color:${riskColour(p.risk.level)};">${p.risk.level} RISK</b><br>`;
-        } else {
-            h += `Not yet determined<br>`;
-        }
-        if (p.risk.rationale) h += `Rationale: ${esc(p.risk.rationale)}<br>`;
+        // RISK STRATIFICATION
+        h += heading('RISK STRATIFICATION');
+        let riskText;
+        if (p.risk.level === 'HIGH') riskText = `<span style="color:#dc2626;font-weight:bold">HIGH RISK</span>`;
+        else if (p.risk.level === 'MODERATE') riskText = `<span style="color:#d97706;font-weight:bold">MODERATE RISK</span>`;
+        else if (p.risk.level === 'LOW') riskText = `<span style="color:#16a34a;font-weight:bold">LOW RISK</span>`;
+        else riskText = ph('not assessed');
+        h += `Risk level: ${riskText}<br>`;
+        h += `Rationale: ${fieldVal(p.risk.rationale)}<br>`;
 
-        // Management Plan
-        h += `<br><b style="font-weight:bold;">MANAGEMENT PLAN</b><br>`;
-        if (p.plan.bloods.length) h += `Bloods Ordered: ${p.plan.bloods.join(', ')}<br>`;
-        h += `ECG Performed: ${esc(p.plan.ecg) || 'Not recorded'}<br>`;
-        let sgRefLine = `Safeguarding Referral Made: ${esc(p.plan.sgReferral) || 'Not recorded'}`;
-        if (p.plan.sgReferral === 'Yes' && p.plan.sgReferralTo) sgRefLine += ` (to: ${esc(p.plan.sgReferralTo)})`;
-        h += sgRefLine + `<br>`;
-        h += `CAMHS Contacted: ${esc(p.plan.camhsContacted) || 'Not recorded'}<br>`;
-        let inptLine = `Inpatient Referral: ${esc(p.plan.inpatient) || 'Not recorded'}`;
-        if (p.plan.inpatient === 'Yes') inptLine += ` (Bed requested: ${esc(p.plan.bedRequested) || 'Not recorded'})`;
-        h += inptLine + `<br>`;
-        h += `Safety Plan Completed: ${esc(p.plan.safetyPlan) || 'Not recorded'}<br>`;
-        h += `Responsible Clinician: ${esc(p.plan.clinician) || '\u2014'} | Senior Review By: ${esc(p.plan.seniorReview) || '\u2014'}<br>`;
+        // MANAGEMENT PLAN
+        h += heading('MANAGEMENT PLAN');
+        h += `Bloods: ${p.plan.bloods.length ? esc(p.plan.bloods.join(', ')) : ph('none ordered')}<br>`;
+        h += `ECG: ${fieldVal(p.plan.ecg)} | Safeguarding referral: ${fieldVal(p.plan.sgReferral)}${p.plan.sgReferral === 'Yes' && p.plan.sgReferralTo ? ' (to: ' + esc(p.plan.sgReferralTo) + ')' : ''} | CAMHS contacted: ${fieldVal(p.plan.camhsContacted)}<br>`;
+        h += `Inpatient referral: ${fieldVal(p.plan.inpatient)}${p.plan.inpatient === 'Yes' ? ' (Bed requested: ' + fieldVal(p.plan.bedRequested) + ')' : ''}<br>`;
+        h += `Disposition: ${fieldVal(p.plan.disposition)}<br>`;
+        h += `Safety plan completed: ${fieldVal(p.plan.safetyPlan)}<br>`;
 
-        // Disposition / Outcome
-        h += `<br><b style="font-weight:bold;">DISPOSITION</b><br>`;
-        if (p.plan.disposition) h += `<b style="font-weight:bold;">${esc(p.plan.disposition)}</b><br>`;
+        h += `<br>Self-harm forms (if applicable): ${(p.headsss.suicide.forms && p.headsss.suicide.forms.length) ? esc(p.headsss.suicide.forms.join(', ')) : ph('not applicable')}<br>`;
+        h += `PRT referral criteria met: ${p.headsss.suicide.prtCriteriaMet ? '<span style="color:#dc2626;font-weight:bold">⚠️ Yes</span>' : ph('none met')}<br>`;
+        h += `Consent obtained: ${fieldVal(p.headsss.suicide.consentBy)} | Consented by: ${fieldVal(p.headsss.suicide.consentBy)} | Obtained by: ${fieldVal(p.headsss.suicide.consentObtainedBy)}<br>`;
 
+        // OUTCOME & DISPOSITION
+        h += heading('OUTCOME &amp; DISPOSITION');
         const dcFlags = [];
         if (p.outcome.dcMedicallyFit) dcFlags.push('Medically fit');
         if (p.outcome.dcPsychologicallyStable) dcFlags.push('Psychologically stable (PRT assessed)');
@@ -545,20 +556,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.outcome.dcSocialCareReferral) dcFlags.push("Children's social care referral made");
         if (p.outcome.dcGpAware) dcFlags.push('GP informed');
         if (p.outcome.dcSchoolNurseAware) dcFlags.push('School nurse informed');
-        if (dcFlags.length) h += `Discharge Readiness: ${dcFlags.join(', ')}<br>`;
-
-        if (p.outcome.notes) h += `Outcome Notes: ${esc(p.outcome.notes)}<br>`;
-        h += `Time of Disposition: ${esc(p.outcome.time) || '\u2014'}<br>`;
-        let fuLine = `Follow-up Arranged: ${esc(p.outcome.followup) || 'Not recorded'}`;
-        if (p.outcome.followup === 'Yes' && p.outcome.followupDetails) fuLine += ` \u2014 ${esc(p.outcome.followupDetails)}`;
+        h += `Discharge readiness: ${dcFlags.length ? esc(dcFlags.join(', ')) : ph('not yet assessed')}<br>`;
+        h += `Outcome notes: ${fieldVal(p.outcome.notes)}<br>`;
+        h += `Time of disposition: ${fieldVal(p.outcome.time)}<br>`;
+        let fuLine = `Follow-up arranged: ${fieldVal(p.outcome.followup)}`;
+        if (p.outcome.followup === 'Yes' && p.outcome.followupDetails) fuLine += ` — ${esc(p.outcome.followupDetails)}`;
         h += fuLine + `<br>`;
-        h += `Information Given to Patient/Carer: ${esc(p.outcome.infoGiven) || 'Not recorded'}<br>`;
-        if (p.outcome.consent) h += `Consent: ${esc(p.outcome.consent)}<br>`;
+        h += `Information given to patient/carer: ${fieldVal(p.outcome.infoGiven)}<br>`;
+        h += `Consent: ${fieldVal(p.outcome.consent)}<br>`;
+        h += `Responsible clinician: ${fieldVal(p.plan.clinician)} | Senior review: ${fieldVal(p.plan.seniorReview)}<br>`;
 
         const eprEl = getEl('epr-output');
         if (eprEl) eprEl.innerHTML = h;
         saveState();
     }
 
-    // --- COPY RICH TEXT (required exact implementation) ---
-    );
+    // --- INIT ---
+    loadState();
+    attachAllListeners();
+    updateNotes();
+});
